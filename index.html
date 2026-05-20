@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="logo.ico" type="image/x-icon" />
+  <title>Bulut Tabanlı Kitap Takip Paneli</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<section class="auth-shell" id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-visual">
+      <div class="brand auth-brand">
+        <img class="brand-mark" src="logo.ico" alt="" />
+        <div>
+          <p class="eyebrow">Bulut tabanlı kitap takip sistemi</p>
+          <h1>Kitap Paneli</h1>
+        </div>
+      </div>
+      <p class="auth-lead">Okuma listeni bulutta sakla, kaldığın yerden devam et.</p>
+      <div class="auth-stack" aria-hidden="true">
+        <span>1984</span>
+        <span>Dune</span>
+        <span>Sapiens</span>
+      </div>
+    </div>
+
+    <div class="auth-panel">
+      <div class="auth-tabs" aria-label="Giriş seçenekleri">
+        <button class="auth-tab active" id="login-tab" type="button" onclick="setAuthMode('login')">Giriş</button>
+        <button class="auth-tab" id="register-tab" type="button" onclick="setAuthMode('register')">Kayıt ol</button>
+      </div>
+
+      <div class="auth-form">
+        <h2 id="auth-title">Giriş yap</h2>
+        <p id="auth-copy">Firebase bağlantını yap, ardından hesabınla kitap paneline gir.</p>
+        <label class="auth-field">
+          <span>E-posta</span>
+          <input id="auth-email" type="email" placeholder="ornek@mail.com" autocomplete="email" />
+        </label>
+        <label class="auth-field">
+          <span>Şifre</span>
+          <input id="auth-password" type="password" placeholder="En az 6 karakter" autocomplete="current-password" />
+        </label>
+        <button class="auth-submit" id="auth-submit" type="button" onclick="submitAuth()">Giriş yap</button>
+        <button class="auth-demo" type="button" onclick="continueLocalDemo()">Firebase olmadan devam et</button>
+      </div>
+
+      <section class="config-banner auth-config" id="config-section">
+        <div>
+          <h2>Firebase Bağlantısı</h2>
+          <p>
+            Authentication ve Firestore için web app bilgilerini gir.
+            <a href="https://console.firebase.google.com" target="_blank" rel="noreferrer">Firebase Console</a>
+          </p>
+        </div>
+        <div class="config-grid">
+          <input id="fb-apiKey" placeholder="apiKey" />
+          <input id="fb-projectId" placeholder="projectId" />
+          <input id="fb-appId" placeholder="appId" />
+          <input id="fb-authDomain" placeholder="authDomain" />
+        </div>
+        <button class="config-btn" onclick="connectFirebase()">Bağlan</button>
+      </section>
+    </div>
+  </div>
+</section>
+
+<main class="app-shell is-hidden" id="app-shell">
+
+  <section class="hero">
+    <div class="hero-top">
+      <div class="brand">
+        <img class="brand-mark" src="logo.ico" alt="" />
+        <div>
+          <p class="eyebrow">Bulut tabanlı kitap takip sistemi</p>
+          <h1>Kitap Takip Paneli</h1>
+        </div>
+      </div>
+      <div class="cloud-pill">
+        <span class="dot"></span>
+        Firebase Firestore
+      </div>
+    </div>
+
+    <div class="hero-content">
+      <div class="hero-copy">
+        <p class="hero-kicker">Okuma arşivi, durum takibi ve istatistikler tek panelde.</p>
+        <div class="hero-tags" aria-label="Kullanılan bulut servisleri">
+          <span>Firestore Sync</span>
+          <span>Google Books API</span>
+          <span>Responsive Web</span>
+        </div>
+      </div>
+
+      <div class="shelf-preview" aria-hidden="true">
+        <div class="preview-book preview-book-a">
+          <span>1984</span>
+          <strong>Okundu</strong>
+        </div>
+        <div class="preview-book preview-book-b">
+          <span>Dune</span>
+          <strong>Okunuyor</strong>
+        </div>
+        <div class="preview-book preview-book-c">
+          <span>Sapiens</span>
+          <strong>Listede</strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="status-row">
+    <div class="fb-status disconnected" id="fb-status">
+      <span class="dot"></span> Yerel mod - Firebase bağlı değil
+    </div>
+    <div class="session-actions">
+      <div class="project-chip" id="user-chip">Demo oturum</div>
+      <button class="logout-btn" type="button" onclick="logoutUser()">Çıkış</button>
+    </div>
+  </section>
+
+  <section class="config-banner app-config">
+    <div>
+      <h2>Firebase Bağlantısı</h2>
+      <p>
+        Firestore bilgilerini girerek verileri gerçek zamanlı bulut veritabanına aktar.
+        <a href="https://console.firebase.google.com" target="_blank" rel="noreferrer">Firebase Console</a>
+      </p>
+    </div>
+    <div class="config-grid">
+      <input id="app-fb-apiKey" placeholder="apiKey" />
+      <input id="app-fb-projectId" placeholder="projectId" />
+      <input id="app-fb-appId" placeholder="appId" />
+      <input id="app-fb-authDomain" placeholder="authDomain" />
+    </div>
+    <button class="config-btn" onclick="connectFirebase()">Bağlan</button>
+  </section>
+
+  <section class="stats" aria-label="Kitap istatistikleri">
+    <article class="stat-card">
+      <span class="stat-label">Toplam</span>
+      <strong class="stat-value" id="s-total">0</strong>
+    </article>
+    <article class="stat-card">
+      <span class="stat-label">Okundu</span>
+      <strong class="stat-value" id="s-read">0</strong>
+    </article>
+    <article class="stat-card">
+      <span class="stat-label">Okunuyor</span>
+      <strong class="stat-value" id="s-reading">0</strong>
+    </article>
+    <article class="stat-card">
+      <span class="stat-label">Toplam Sayfa</span>
+      <strong class="stat-value" id="s-pages">0</strong>
+    </article>
+  </section>
+
+  <section class="workspace">
+    <section class="add-section" aria-labelledby="add-title">
+      <div class="section-heading">
+        <h2 id="add-title">Yeni Kitap</h2>
+        <span>Bulut kaydı</span>
+      </div>
+
+      <div class="form-row two">
+        <div class="autocomplete-wrap">
+          <input id="inp-title" placeholder="Kitap adı *" autocomplete="off"
+                 oninput="onTitleInput(this.value)" onkeydown="onTitleKeydown(event)" />
+          <div class="suggestions" id="suggestions" style="display:none;"></div>
+        </div>
+        <input id="inp-author" placeholder="Yazar" />
+      </div>
+
+      <div class="form-row three">
+        <select id="inp-status" aria-label="Okuma durumu">
+          <option value="listede">Listede</option>
+          <option value="okunuyor">Okunuyor</option>
+          <option value="okundu">Okundu</option>
+        </select>
+        <input id="inp-pages" type="number" placeholder="Sayfa sayısı" min="1" />
+        <input id="inp-genre" placeholder="Tür" />
+      </div>
+
+      <div class="form-actions">
+        <button class="submit-btn" id="add-btn" onclick="addBook()">+ Kitap Ekle</button>
+        <button class="reset-btn" type="button" onclick="resetBookForm()">Sıfırla</button>
+      </div>
+    </section>
+
+    <section class="library-panel" aria-label="Kitap listesi">
+      <div class="toolbar">
+        <div class="filters" aria-label="Duruma göre filtrele">
+          <button class="filter-btn active" data-filter="hepsi" onclick="setFilter(this)">Hepsi</button>
+          <button class="filter-btn" data-filter="listede" onclick="setFilter(this)">Listede</button>
+          <button class="filter-btn" data-filter="okunuyor" onclick="setFilter(this)">Okunuyor</button>
+          <button class="filter-btn" data-filter="okundu" onclick="setFilter(this)">Okundu</button>
+        </div>
+        <div class="tools">
+          <input class="search-input" id="search" placeholder="Ara" oninput="render()" />
+          <select class="sort-select" id="sort-by" onchange="render()" aria-label="Sıralama">
+            <option value="date">En Yeni</option>
+            <option value="title">İsme Göre</option>
+            <option value="pages">Sayfaya Göre</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="book-list" id="book-list">
+        <div class="loading"><span class="spinner"></span> Yükleniyor...</div>
+      </div>
+    </section>
+  </section>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
