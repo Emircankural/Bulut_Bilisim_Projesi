@@ -69,6 +69,20 @@ let useFirebase  = false;
 let demoSession  = false;
 let nextLocalId  = 4;
 
+const FIREBASE_CONFIG_STORAGE_KEY = 'bookPanelFirebaseConfig';
+const DEFAULT_FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyBDBi1d_YlHZNy3OmgbPljMPJLrmRveegM',
+  authDomain: 'bulut-tabanli-kitap-okuma.firebaseapp.com',
+  projectId: 'bulut-tabanli-kitap-okuma',
+  appId: '1:683576486187:web:4cf1c40a573dea78b47d6e',
+};
+const FIREBASE_FIELD_IDS = {
+  apiKey: ['app-fb-apiKey', 'fb-apiKey'],
+  projectId: ['app-fb-projectId', 'fb-projectId'],
+  appId: ['app-fb-appId', 'fb-appId'],
+  authDomain: ['app-fb-authDomain', 'fb-authDomain'],
+};
+
 // Kitap sırtusu arka plan rengi ve emoji haritası
 const SPINE_MAP = {
   listede:  { bg: '#FEF9EE', emoji: '📋' },
@@ -79,62 +93,55 @@ const SPINE_MAP = {
 
 // ─── Firebase Bağlantısı ───────────────────────────────────────────────────────
 
-window.connectFirebase = async function () {
-  const apiKey     = document.getElementById('fb-apiKey').value.trim();
-  const projectId  = document.getElementById('fb-projectId').value.trim();
-  const appId      = document.getElementById('fb-appId').value.trim();
-  const authDomain = document.getElementById('fb-authDomain').value.trim()
-                     || `${projectId}.firebaseapp.com`;
+function readFirebaseField(name) {
+  return FIREBASE_FIELD_IDS[name]
+    .map((id) => document.getElementById(id)?.value.trim() || '')
+    .find(Boolean) || '';
+}
 
-  if (!apiKey || !projectId || !appId) {
-    showToast('❗ apiKey, projectId ve appId zorunlu.');
-    return;
-  }
+function setFirebaseField(name, value) {
+  FIREBASE_FIELD_IDS[name].forEach((id) => {
+    const input = document.getElementById(id);
+    if (input) input.value = value || '';
+  });
+}
 
-  setStatus('connecting');
+function readFirebaseConfigFromForm() {
+  const projectId = readFirebaseField('projectId');
 
+  return {
+    apiKey: readFirebaseField('apiKey'),
+    projectId,
+    appId: readFirebaseField('appId'),
+    authDomain: readFirebaseField('authDomain') || (projectId ? `${projectId}.firebaseapp.com` : ''),
+  };
+}
+
+function fillFirebaseConfigForm(config) {
+  Object.keys(FIREBASE_FIELD_IDS).forEach((key) => setFirebaseField(key, config?.[key] || ''));
+}
+
+function getSavedFirebaseConfig() {
   try {
-    const app = initializeApp({ apiKey, authDomain, projectId, appId });
-    db = getFirestore(app);
-
-    // Gerçek zamanlı dinleyici başlat
-    const colRef = collection(db, 'books');
-    unsubscribe = onSnapshot(
-      colRef,
-      (snap) => {
-        books = snap.docs.map((d) => ({
-          id: d.id,
-          ...d.data(),
-          date: d.data().date?.toMillis?.() || Date.now(),
-        }));
-        render();
-        updateStats();
-      },
-      (err) => {
-        console.error(err);
-        setStatus('error');
-        showToast('⚠️ Firestore bağlantı hatası: ' + err.message);
-      }
-    );
-
-    useFirebase = true;
-    setStatus('connected');
-    document.getElementById('config-section').style.display = 'none';
-    showToast('✅ Firebase bağlandı! Veriler gerçek zamanlı senkronize ediliyor.');
-  } catch (e) {
-    setStatus('error');
-    showToast('❌ Bağlantı başarısız: ' + e.message);
+    return JSON.parse(localStorage.getItem(FIREBASE_CONFIG_STORAGE_KEY) || 'null') || DEFAULT_FIREBASE_CONFIG;
+  } catch {
+    return DEFAULT_FIREBASE_CONFIG;
   }
-};
+}
+
+function saveFirebaseConfig(config) {
+  localStorage.setItem(FIREBASE_CONFIG_STORAGE_KEY, JSON.stringify(config));
+}
+
+function hideFirebaseConfigPanels() {
+  document.getElementById('config-section')?.classList.add('is-hidden');
+  document.querySelector('.app-config')?.classList.add('is-hidden');
+}
 
 window.connectFirebase = async function () {
-  const apiKey     = document.getElementById('fb-apiKey').value.trim();
-  const projectId  = document.getElementById('fb-projectId').value.trim();
-  const appId      = document.getElementById('fb-appId').value.trim();
-  const authDomain = document.getElementById('fb-authDomain').value.trim()
-                     || `${projectId}.firebaseapp.com`;
+  const config = readFirebaseConfigFromForm();
 
-  if (!apiKey || !projectId || !appId) {
+  if (!config.apiKey || !config.projectId || !config.appId) {
     showToast('apiKey, projectId ve appId zorunlu.');
     return;
   }
@@ -142,20 +149,42 @@ window.connectFirebase = async function () {
   setStatus('connecting');
 
   try {
-    firebaseApp = firebaseApp || initializeApp({ apiKey, authDomain, projectId, appId });
+    firebaseApp = firebaseApp || initializeApp(config);
     db = getFirestore(firebaseApp);
     auth = getAuth(firebaseApp);
     bindAuthListener();
+    saveFirebaseConfig(config);
+    fillFirebaseConfigForm(config);
 
     useFirebase = true;
     setStatus('connected');
-    document.getElementById('config-section').style.display = 'none';
+    hideFirebaseConfigPanels();
     showToast('Firebase bağlandı. Şimdi giriş yapabilirsin.');
   } catch (e) {
     setStatus('error');
     showToast('Bağlantı başarısız: ' + e.message);
   }
 };
+
+async function connectFirebaseFromSavedConfig() {
+  const config = getSavedFirebaseConfig();
+  if (!config?.apiKey || !config?.projectId || !config?.appId) return;
+
+  fillFirebaseConfigForm(config);
+
+  try {
+    firebaseApp = firebaseApp || initializeApp(config);
+    db = getFirestore(firebaseApp);
+    auth = getAuth(firebaseApp);
+    bindAuthListener();
+    useFirebase = true;
+    setStatus('connected');
+    hideFirebaseConfigPanels();
+  } catch (e) {
+    setStatus('error');
+    console.error('Kaydedilen Firebase ayarlari yuklenemedi:', e);
+  }
+}
 
 function bindAuthListener() {
   if (!auth || auth._booksAuthBound) return;
@@ -877,6 +906,8 @@ document.addEventListener('click', (e) => {
   if (!e.target.closest('.autocomplete-wrap')) hideSuggestions();
 });
 
+fillFirebaseConfigForm(getSavedFirebaseConfig());
+connectFirebaseFromSavedConfig();
 
 // ─── Başlangıç Render ─────────────────────────────────────────────────────────
 
